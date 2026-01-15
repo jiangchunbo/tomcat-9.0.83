@@ -74,6 +74,7 @@ public final class UDecoder {
      */
     public void convert(ByteChunk mb, boolean query) throws IOException {
         if (query) {
+            // query 解析将 %2F 解析为 /。这样如果参数是 %2F/ 那么就是 //
             convert(mb, true, EncodedSolidusHandling.DECODE);
         } else {
             convert(mb, false, EncodedSolidusHandling.REJECT);
@@ -117,11 +118,16 @@ public final class UDecoder {
         }
 
         for (int j = idx; j < end; j++, idx++) {
+            // 1. 如果用户传入的字符串就是 '+'，并且正在解析 query
             if (buff[j] == '+' && query) {
                 buff[idx] = (byte) ' ';
-            } else if (buff[j] != '%') {
+            }
+            // 2. 其他字符，不需要解析 (或者是 '+' 但是非 query 模式)
+            else if (buff[j] != '%') {
                 buff[idx] = buff[j];
-            } else {
+            }
+            // 3. 解析 %HH 格式
+            else {
                 // read next 2 digits
                 if (j + 2 >= end) {
                     throw EXCEPTION_EOF;

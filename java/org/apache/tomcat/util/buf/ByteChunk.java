@@ -619,6 +619,7 @@ public final class ByteChunk extends AbstractChunk {
         // bytes will be used. The code below is from Apache Harmony.
         CharBuffer cb;
         if (malformedInputAction == CodingErrorAction.REPLACE && unmappableCharacterAction == CodingErrorAction.REPLACE) {
+            // 使用 JDK 字符集解码 byte[]
             cb = charset.decode(ByteBuffer.wrap(buff, start, end - start));
         } else {
             cb = charset.newDecoder().onMalformedInput(malformedInputAction)

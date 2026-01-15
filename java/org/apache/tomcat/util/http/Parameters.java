@@ -242,7 +242,7 @@ public final class Parameters {
         int pos = start;
         int end = start + len;
 
-        while (pos < end) {
+        while (pos < end) { // 每次循环都是解析参数
             int nameStart = pos;
             int nameEnd = -1;
             int valueStart = -1;
@@ -253,14 +253,16 @@ public final class Parameters {
             boolean decodeValue = false;
             boolean parameterComplete = false;
 
-            do {
-                switch (bytes[pos]) {
+            do { // 解析出一个 kv
+
+                // switch case 重要的是在找 & 分隔符，也可能没有
+                switch (bytes[pos]) { // 特殊处理 = & % +
                     case '=':
                         if (parsingName) {
                             // Name finished. Value starts from next character
                             nameEnd = pos;
                             parsingName = false;
-                            valueStart = ++pos;
+                            valueStart = ++pos; // '=' 下一个是 value，所以 ++post
                         } else {
                             // Equals character in value
                             pos++;
@@ -269,16 +271,17 @@ public final class Parameters {
                     case '&':
                         if (parsingName) {
                             // Name finished. No value.
-                            nameEnd = pos;
+                            nameEnd = pos; // 如果当前正在解析 name，说明没有 value
                         } else {
                             // Value finished
-                            valueEnd = pos;
+                            valueEnd = pos; // 否则就是解析 value，标记 valueEnd
                         }
                         parameterComplete = true;
                         pos++;
                         break;
                     case '%':
                     case '+':
+                        // 如果遇到 % 和 + 就标记一下，稍后需要进行 decode
                         // Decoding required
                         if (parsingName) {
                             decodeName = true;
@@ -291,12 +294,13 @@ public final class Parameters {
                         pos++;
                         break;
                 }
-            } while (!parameterComplete && pos < end);
+            } while (!parameterComplete && pos < end); // 终止条件就是取反，[参数kv解析完成] || [解析到头]
 
+            // 特殊逻辑，当 post 达到 end (结尾)，确保 nameEnd、valueEnd 都被设置为正确的值
             if (pos == end) {
                 if (nameEnd == -1) {
                     nameEnd = pos;
-                } else if (valueStart > -1 && valueEnd == -1) {
+                } else if (valueStart > -1 && valueEnd == -1) { // 有始无终
                     valueEnd = pos;
                 }
             }
@@ -306,7 +310,10 @@ public final class Parameters {
                         new String(bytes, nameStart, nameEnd - nameStart, DEFAULT_BODY_CHARSET)));
             }
 
+            // 处理没有 name 的情况 (nameEnd == nameStart 就是没有 name，一般来说没有 name 是有问题的，需要跳过)
             if (nameEnd <= nameStart) {
+
+                // value 也没有，一般就是连续的 &&，或者 &=& 才会有这种情况
                 if (valueStart == -1) {
                     // &&
                     if (log.isDebugEnabled()) {
@@ -315,7 +322,8 @@ public final class Parameters {
                     // Do not flag as error
                     continue;
                 }
-                // &=foo&
+
+                // &=foo&  -> 只有 value 没有 name，准备打印日志，下面都是构建 message 的
                 UserDataHelper.Mode logMode = userDataLog.getNextMode();
                 if (logMode != null) {
                     String extract;
@@ -342,7 +350,12 @@ public final class Parameters {
                 // invalid chunk - it's better to ignore
             }
 
+            // 成功解析到有意义的 name value
+
+            // 设置 name
             tmpName.setBytes(bytes, nameStart, nameEnd - nameStart);
+
+            // 设置 value
             if (valueStart >= 0) {
                 tmpValue.setBytes(bytes, valueStart, valueEnd - valueStart);
             } else {
@@ -370,12 +383,13 @@ public final class Parameters {
                 String name;
                 String value;
 
-                if (decodeName) {
+                if (decodeName) { // 遇到 + 或者 % 需要 URL 解码
                     urlDecode(tmpName);
                 }
-                tmpName.setCharset(charset);
+                tmpName.setCharset(charset); // 设置 ByteChunk 字符集
                 name = tmpName.toString();
 
+                // 如果解析到 value，模仿 name 进行字符集的设置、解码
                 if (valueStart >= 0) {
                     if (decodeValue) {
                         urlDecode(tmpValue);
@@ -462,6 +476,9 @@ public final class Parameters {
         }
     }
 
+    /**
+     * 以 query 模式解码
+     */
     private void urlDecode(ByteChunk bc) throws IOException {
         if (urlDec == null) {
             urlDec = new UDecoder();

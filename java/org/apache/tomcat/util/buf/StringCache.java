@@ -219,7 +219,9 @@ public class StringCache {
         }
     }
 
-
+    /**
+     * @param bc 传入的字节块 ByteChunk，携带了字符集
+     */
     public static String toString(ByteChunk bc, CodingErrorAction malformedInputAction,
             CodingErrorAction unmappableCharacterAction) throws CharacterCodingException {
 

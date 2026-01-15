@@ -20,9 +20,24 @@ import java.util.Locale;
 
 import org.apache.tomcat.util.res.StringManager;
 
+/**
+ * 用来指定服务器在收到 URL 中包含经过百分号编码的斜线 (/)[%2F或%2f] 时应该怎么处理
+ */
 public enum EncodedSolidusHandling {
+
+    /**
+     * 将 %2F 解码成普通斜杠
+     */
     DECODE("decode"),
+
+    /**
+     * 直接拒绝包含编码斜杠的请求
+     */
     REJECT("reject"),
+
+    /**
+     * 不做任何转换
+     */
     PASS_THROUGH("passthrough");
 
     private static final StringManager sm = StringManager.getManager(EncodedSolidusHandling.class);
