@@ -473,6 +473,7 @@ public class Http11InputBuffer implements InputBuffer, ApplicationBufferHandler 
                     }
                 }
                 // 标记请求 URL 参数开始的位置(? 的位置)
+                // ps: 即使你的 URL 是 https://example.com/authorize?redirectUri=https://xxkj.glzhxx.com/study-api/redirect?type%3Dzp
                 else if (chr == Constants.QUESTION && parsingRequestLineQPos == -1) {
                     parsingRequestLineQPos = pos;
                 }
